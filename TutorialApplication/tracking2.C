@@ -14,6 +14,7 @@
 #include "TPad.h"
 
 #include <cassert>
+#include <cmath>
 
 typedef TMatrixTSym<double>	TMatrixDSym;
 
@@ -25,6 +26,12 @@ TH1F *hresid2 = new TH1F("hresid2","resid2; z_{hit}-z_{true} [cm]; events",100,-
 TH1F *hresid3 = new TH1F("hresid3","resid3; z_{hit}-z_{true} [cm]; events",100,-0.1,0.1);
 TH1F *hpt = new TH1F("hpt","; p_{T} [GeV]",100,0,10);
 TH1F *hptpull = new TH1F("hptpull","; (p_{T}^{meas} - p_{T}^{true})/#sigma",100,-10,10);
+TH1F *hptpull1 = new TH1F("hptpull2","; (z_{hit}-z_{true})/#sigma",100,-10,10);
+TH1F *hptpull2 = new TH1F("hptpull2","; (z_{hit}-z_{true})/#sigma",100,-10,10);
+TH1F *hptpull3 = new TH1F("hptpull2","; (z_{hit}-z_{true})/#sigma",100,-10,10);
+
+
+
 
 class Cluster : public TVector3 {
 public:
@@ -142,7 +149,7 @@ unsigned char getSignal(const std::string& n)
   //add noise
   c += gRandom->Gaus(0,3);
   //noise cut
-  int noisecut = 0;
+  int noisecut = 20;
   if( c < noisecut ) return 0;
   if(c > 255) return 255;
   return c;
@@ -213,7 +220,7 @@ int updateClusters(TObjArray* clusters)
       gGeoManager->CdUp();
     }//loop within layer
     gGeoManager->CdUp();
-  }//loop over layers
+  }//loop over layerssnapshot1
   return clusters->GetEntriesFast();
 }
 
@@ -253,18 +260,29 @@ int reconstructHitsWeighted(TObjArray* clusters)
   for(int i = 0 ; i < clusters->GetEntriesFast() ; ++i) {
     Cluster* c = (Cluster*)clusters->At(i);
     //compute weithed mean
+    int sum=0;
+    int temp=0;
     for(int j = 0 ; j < c->nStrips() ; ++j) {
       int sig = c->signal(j);
+      sum+=sig;
+      temp+=j*sig;
     }
-    c->SetZ(0);
-    c->setErrZ(0);
+    double mean=temp*1.0/sum;
+    double errsq=0;
+    for(int j = 0 ; j < c->nStrips() ; ++j) {
+      int sig = c->signal(j);
+      errsq+=pow(sig*1.0/sum,2)*pow(1/sqrt(12),2)+pow((j-mean)*1.0/sum,2)*sig;
+    }
+   
+    c->SetZ(c->ZofFirstStrip()+mean*c->pitch());
+    c->setErrZ(sqrt(errsq)*c->pitch()); //ASK LOUIS Moureaux
   }
   return clusters->GetEntriesFast();
 }
 
 int reconstructHits(TObjArray* clusters) {
-  return reconstructHitsBinary(clusters);
-  //return reconstructHitsWeighted(clusters);
+  //return reconstructHitsBinary(clusters);
+  return reconstructHitsWeighted(clusters);
 }
   
 
@@ -296,16 +314,23 @@ void plotResdiuals(TObjArray* clusters) {
     double x = c->X();
     //fill residual plots; x-position of layers hardcoded!!!
     double zorig = getTrueZ(x);    
-    if(c->layer() == 1)
+    if(c->layer() == 1){
       hresid1->Fill(zorig-c->Z());
+      hptpull1->Fill((zorig-c->Z())/c->errZ());
+    }
     else {
-      if(c->layer() == 2)
+      if(c->layer() == 2){
 	hresid2->Fill(zorig-c->Z());
-      else if(c->layer() == 3)
+	hptpull2->Fill((zorig-c->Z())/c->errZ());
+      }
+      else if(c->layer() == 3){
 	hresid3->Fill(zorig-c->Z());
+	hptpull3->Fill((zorig-c->Z())/c->errZ());
+      }
     }
   }
 }
+
 
 //globals for fit :-(
 Track* gTrack;
@@ -397,8 +422,8 @@ void tracking2()
   bool doFit = false;
 
   // define particle and control parameters of loop   
-  unsigned int nevt = 1;
-  double p = 1.0;
+  unsigned int nevt = 400;
+  double p = 1;
   app->SetPrimaryPDG(-13);    // +/-11: PDG code of e+/- 
   /* other PDG codes     22: Photon    +-13: muon   
                      +/-211: pion   +/-2212: proton     */
@@ -409,6 +434,9 @@ void tracking2()
   hresid3->Reset();
   hpt->Reset();
   hptpull->Reset(); 
+  hptpull1->Reset();
+  hptpull2->Reset();
+  hptpull3->Reset();
   TObjArray* clusters = new TObjArray();
   clusters->SetOwner(true);
   for(unsigned int i=0;i<nevt;++i) {
@@ -441,7 +469,7 @@ void tracking2()
     }
   }
   TCanvas* c = new TCanvas("c");
-  c->Divide(3,2);
+  c->Divide(3,3);
   c->cd(1);
   hlayer1->Draw("hist");
   c->cd(2);
@@ -454,6 +482,12 @@ void tracking2()
   hresid2->Draw();
   c->cd(6);
   hresid3->Draw();
+  c->cd(7);
+  hptpull1->Draw();
+  c->cd(8);
+  hptpull2->Draw();
+  c->cd(9);
+  hptpull3->Draw();
 
   if(doFit) {
     TCanvas* c2 = new TCanvas("c2");
@@ -463,4 +497,7 @@ void tracking2()
     c2->cd(2);
     hptpull->Draw();
   }
+  
+  
+  
 }
