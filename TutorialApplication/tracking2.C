@@ -24,7 +24,7 @@ TH1F *hlayer3 = new TH1F("hlayer3","layer3;z [cm]; counts",100/0.0150,-50,50);
 TH1F *hresid1 = new TH1F("hresid1","resid1; z_{hit}-z_{true} [cm]; events",100,-0.1,0.1);
 TH1F *hresid2 = new TH1F("hresid2","resid2; z_{hit}-z_{true} [cm]; events",100,-0.1,0.1);
 TH1F *hresid3 = new TH1F("hresid3","resid3; z_{hit}-z_{true} [cm]; events",100,-0.1,0.1);
-TH1F *hpt = new TH1F("hpt","; p_{T} [GeV]",100,0,10);
+TH1F *hpt = new TH1F("hpt","; p_{T} [GeV]",1000,4,6);
 TH1F *hptpull = new TH1F("hptpull","; (p_{T}^{meas} - p_{T}^{true})/#sigma",100,-10,10);
 TH1F *hptpull1 = new TH1F("hptpull2","; (z_{hit}-z_{true})/#sigma",100,-10,10);
 TH1F *hptpull2 = new TH1F("hptpull2","; (z_{hit}-z_{true})/#sigma",100,-10,10);
@@ -81,10 +81,11 @@ public:
   
 
 
-  double pt() const { return 0;}//needs changes
+  double pt() const { 
+    return 0.3*r()*0.01*Track::B();}//needs changes
 
   double rErr() const { return sqrt(fCov(0,0));}
-  double ptErr() const { return 1000;}//needs changes
+  double ptErr() const { return 0.3*0.01*rErr()*Track::B();}//needs changes
 
 
   double cov(int i, int j) const { return fCov(i,j);}
@@ -97,12 +98,12 @@ public:
   
   void setCov(int i, int j, double c) { fCov(i,j) = c;}
   
-  double x(double lambda) const { return 0;}//needs changes
-  double z(double lambda) const { return 0;}//needs changes
+  double x(double lambda) const { return x0()+charge()*r()*sin(charge()*lambda+phi0());}//needs changes
+  double z(double lambda) const { return z0()-charge()*r()*cos(charge()*lambda+phi0());}//needs changes
   double y(double) const { return 0; }
   
   double lambdaFromX(double posx) const { //needs changes
-    return 0;
+    return (asin((posx-x0())/(charge()*r()))-phi0())/charge();
   }
 
   static double B() {
@@ -132,7 +133,7 @@ THelix* Track::helix() const {
   axis[1] = 1;
   axis[2] = 0;
   THelix* h = new THelix(xyz,v,1,range,kHelixY,axis);
-  //h->Print();
+  h->Print();
   h->SetLineColor(7);
   return h;
 }
@@ -147,7 +148,7 @@ unsigned char getSignal(const std::string& n)
   int c = app->depEinNode(n) * 600000;
   //if(c > 0) std::cout << "getSignal for " << n << " :" << c << std::endl;
   //add noise
-  c += gRandom->Gaus(0,3);
+  //c += gRandom->Gaus(0,3);
   //noise cut
   int noisecut = 20;
   if( c < noisecut ) return 0;
@@ -218,6 +219,8 @@ int updateClusters(TObjArray* clusters)
         gGeoManager->CdUp();
       }//loop within silayer
       gGeoManager->CdUp();
+
+
     }//loop within layer
     gGeoManager->CdUp();
   }//loop over layerssnapshot1
@@ -404,11 +407,12 @@ void tracking2()
 {
   TutorialApplication* app = (TutorialApplication*)TutorialApplication::Instance();
   // position of silicon layers in x   
-  double pos1 = -45.0;
-  double pos2 = -30.0;
-  double pos3 = 45.0; 
+  double L = 10;
+  double pos1 = 0;
+  double pos2 = L/2;
+  double pos3 = L; 
   double pitch = 0.0150;
-  double materialLength = 0.05;//length of support structures
+  double materialLength = 0.05/1000;//length of support structures
   double Bfield = 2.0;//magnetic field in T
   TString geom("geometry/tracker2(");
   geom+=pos1; geom.Append(",");
@@ -419,11 +423,11 @@ void tracking2()
   geom+=Bfield; geom.Append(")"); 
   app->InitMC(geom); 
 
-  bool doFit = false;
+  bool doFit = true;
 
   // define particle and control parameters of loop   
-  unsigned int nevt = 400;
-  double p = 1;
+  unsigned int nevt = 500;
+  double p = 5; //Set to 5 GeV
   app->SetPrimaryPDG(-13);    // +/-11: PDG code of e+/- 
   /* other PDG codes     22: Photon    +-13: muon   
                      +/-211: pion   +/-2212: proton     */
@@ -460,7 +464,7 @@ void tracking2()
 	  clust.push_back(c);
 	}	
 	Track *t = fitTrack(clust);
-	if(draw) t->helix()->Draw();
+	if(draw || true) t->helix()->Draw();
 	hpt->Fill(t->pt());
 	hptpull->Fill((t->pt()-p)/t->ptErr());
       } else {
