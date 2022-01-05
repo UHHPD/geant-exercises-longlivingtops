@@ -131,7 +131,7 @@ void CaloAna()
     // reset internal histograms
     app->FinishRun();
   }
-nevt=100;
+nevt=1000;
 p = 10;//GeV
 app->SetPrimaryPDG(-211); 
 app->SetPrimaryMomentum(p);
