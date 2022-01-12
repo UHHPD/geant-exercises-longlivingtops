@@ -67,7 +67,7 @@ void CaloAna()
 {
   TutorialApplication* app = (TutorialApplication*)TutorialApplication::Instance();
 // initialize geometry: volumes and materials of a Sampling Caslorimeter   
-  Double_t AbsWid=0.32;      //Absorber width
+  Double_t AbsWid=0.32;//2;//0.32;      //Absorber width //for Compensating 0.32
   Double_t SciWid=1.;         //Scintillator width, 
   Double_t SizeFact=3;      //size of the calorimeter in interaction lengths labmda_I, 4.
   Int_t IMat=1;               //material 1:Pb 2:Fe 
@@ -82,8 +82,8 @@ void CaloAna()
 // Book histogram(s)
  // for shower analyis
   TH1F* hx  = new TH1F("hx","starting point of shower",100, 0.,25.);
-  TH1F* Ecounts  = new TH1F("Ecount","e Fraction",100, 0.,500.);
-  TH1F* Picounts  = new TH1F("picount","#pi Fraction",100, 0.,500.);
+  TH1F* Ecounts  = new TH1F("Ecount","e Fraction",400, 0.,1500.);
+  TH1F* Picounts  = new TH1F("picount","#pi Fraction",400, 0.,1500.);
 
   hx->SetYTitle("# of entries");  
   hx->SetXTitle("x of first vertex [cm]");
@@ -131,7 +131,7 @@ void CaloAna()
     // reset internal histograms
     app->FinishRun();
   }
-nevt=1000;
+nevt=0;
 p = 10;//GeV
 app->SetPrimaryPDG(-211); 
 app->SetPrimaryMomentum(p);
@@ -146,16 +146,16 @@ for(unsigned int i = 0 ; i < nevt ; ++i) {
     Ecounts->Fill(CountChargedinScint());
     app->FinishRun();
    }
-
+app->SetPrimaryPDG(-211); 
   // events at different momenta
-  nevt = 1; p = 0.1;
+  nevt = 1000; p = 0.1;
   double stepping = 9.9 / nevt;
   // generate a large number of events
   for(unsigned int i=0;i<nevt;++i) {
     app->SetPrimaryMomentum(p);
     app->RunMC(1,!(i%10));
     hcounts->Fill(p,CountChargedinScint());
-    hresponse->Fill(p,CountChargedinScint()*0.01397/p);
+    hresponse->Fill(p,CountChargedinScint()*0.0091/p);
     p += stepping;
     
     // reset internal histograms
@@ -179,6 +179,7 @@ r1->GetYaxis()->SetRangeUser(-4,1.5);
 c2->cd(3); r1->Draw();
 c2->cd(4); r2->Draw();
 
+/*
 TCanvas* c3 = new TCanvas();
 c3->cd();
 Ecounts->SetLineColor(600);
@@ -187,5 +188,5 @@ Ecounts->SetTitle("Fractions");
 Ecounts->GetXaxis()->SetTitle("Counts");
 Ecounts->Draw("Hist");
 Picounts->Draw("Hist Sames");
-
+*/
 }
