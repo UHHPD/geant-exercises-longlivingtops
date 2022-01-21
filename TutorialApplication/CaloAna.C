@@ -3,6 +3,7 @@
 #include "TVirtualGeoTrack.h"
 #include "TDatabasePDG.h"
 #include "TH1F.h"
+#include "TF1.h"
 #include "TCanvas.h"
 #include "TROOT.h"
 #include <iostream>
@@ -176,8 +177,15 @@ app->SetPrimaryPDG(-211);
  TH1D* r1 = (TH1D*) gROOT->FindObject("hresponse_1");
  TH1D* r2 = (TH1D*) gROOT->FindObject("hresponse_2");
 r1->GetYaxis()->SetRangeUser(-4,1.5);
+
+TF1 *f1 = new TF1("f1","[0]/sqrt(x)+[1]",0,10);
+c2->cd(4);
+r2->Fit("f1","","",0,10);
+
 c2->cd(3); r1->Draw();
-c2->cd(4); r2->Draw();
+c2->cd(4); //r2->Draw();
+//f1->Draw(); 
+
 
 /*
 TCanvas* c3 = new TCanvas();

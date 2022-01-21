@@ -97,6 +97,10 @@
 ./CaloAna_C.so: /usr/local/root532/include/TQObject.h
 ./CaloAna_C.so: /usr/local/root532/include/TVirtualGeoTrack.h
 ./CaloAna_C.so: /usr/local/root532/include/TH1F.h
+./CaloAna_C.so: /usr/local/root532/include/TF1.h
+./CaloAna_C.so: /usr/local/root532/include/TFormula.h
+./CaloAna_C.so: /usr/local/root532/include/TBits.h
+./CaloAna_C.so: /usr/local/root532/include/Math/ParamFunctor.h
 ./CaloAna_C.so: /usr/local/root532/include/TCanvas.h
 ./CaloAna_C.so: /usr/local/root532/include/TPad.h
 ./CaloAna_C.so: /usr/local/root532/include/TAttCanvas.h
